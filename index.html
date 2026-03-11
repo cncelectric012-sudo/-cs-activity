@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#e8001c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>CS Activity Reporter</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #e8001c;
+    --red2: #ff1f3a;
+    --red-dark: #b0001a;
+    --red-light: #fff0f2;
+    --red-soft: #ffe0e4;
+    --bg: #ffffff;
+    --surface: #f9f9f9;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --muted: #888;
+    --border: #eee;
+    --font-head: 'Montserrat', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:var(--bg); color:var(--text); font-family:var(--font-body); min-height:100vh; overflow-x:hidden; }
+
+  /* SCREENS */
+  .screen { display:none; min-height:100vh; }
+  .screen.active { display:flex; flex-direction:column; }
+
+  /* ===== AUTH ===== */
+  #authScreen {
+    background: linear-gradient(160deg, #e8001c 0%, #ff1f3a 40%, #fff 100%);
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .auth-box {
+    background:#fff;
+    border-radius:28px;
+    padding:36px 28px;
+    width:100%; max-width:420px;
+    box-shadow: 0 24px 60px rgba(232,0,28,0.18);
+  }
+  .auth-logo {
+    font-family:var(--font-head); font-size:30px; font-weight:900;
+    color:var(--red); text-align:center; margin-bottom:4px; letter-spacing:-1px;
+  }
+  .auth-logo span { color:#1a1a1a; }
+  .auth-sub { text-align:center; color:var(--muted); font-size:12px; margin-bottom:28px; text-transform:uppercase; letter-spacing:1px; }
+  .tab-row { display:flex; background:var(--red-light); border-radius:12px; padding:4px; margin-bottom:24px; }
+  .tab-btn {
+    flex:1; padding:10px; border:none; background:transparent;
+    color:var(--muted); font-family:var(--font-head); font-size:13px; font-weight:700;
+    border-radius:9px; cursor:pointer; transition:all 0.2s; text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .tab-btn.active { background:var(--red); color:#fff; }
+  .input-group { margin-bottom:14px; }
+  .input-group label { display:block; font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; }
+  .input-group input {
+    width:100%; padding:13px 16px;
+    background:#f9f9f9; border:2px solid var(--border);
+    border-radius:12px; color:var(--text);
+    font-family:var(--font-body); font-size:15px; outline:none; transition:border-color 0.2s;
+  }
+  .input-group input:focus { border-color:var(--red); background:#fff; }
+  .btn-primary {
+    width:100%; padding:15px;
+    background:var(--red);
+    border:none; border-radius:12px;
+    color:#fff; font-family:var(--font-head); font-size:15px; font-weight:700;
+    cursor:pointer; transition:all 0.2s; margin-top:6px; letter-spacing:0.5px;
+    text-transform:uppercase;
+  }
+  .btn-primary:hover { background:var(--red-dark); transform:translateY(-1px); box-shadow:0 8px 20px rgba(232,0,28,0.3); }
+  .error-msg { color:var(--red); font-size:13px; text-align:center; margin-top:10px; min-height:20px; }
+
+  /* ===== TOPBAR ===== */
+  .topbar {
+    background:var(--red);
+    padding:16px 20px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:100;
+    box-shadow: 0 2px 12px rgba(232,0,28,0.3);
+  }
+  .topbar-title { font-family:var(--font-head); font-size:18px; font-weight:900; color:#fff; letter-spacing:-0.5px; }
+  .topbar-title span { color:rgba(255,255,255,0.65); }
+  .avatar {
+    width:36px; height:36px; border-radius:50%;
+    background:rgba(255,255,255,0.25);
+    border:2px solid rgba(255,255,255,0.5);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-head); font-size:14px; font-weight:900; color:#fff;
+    cursor:pointer;
+  }
+
+  /* ===== BOTTOM NAV ===== */
+  .bottom-nav {
+    background:#fff;
+    border-top:2px solid var(--red-soft);
+    display:flex; position:fixed; bottom:0; left:0; right:0; z-index:100;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .nav-item {
+    flex:1; padding:12px 4px 8px;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    cursor:pointer; border:none; background:transparent;
+    color:#bbb; font-family:var(--font-body); font-size:10px; font-weight:500;
+    transition:all 0.2s;
+  }
+  .nav-item.active { color:var(--red); }
+  .nav-item svg { width:22px; height:22px; }
+
+  /* ===== CONTENT ===== */
+  .content { flex:1; overflow-y:auto; padding:20px 16px 100px; background:var(--surface); }
+
+  /* ===== HOME ===== */
+  .greeting { font-family:var(--font-head); font-size:26px; font-weight:900; margin-bottom:3px; letter-spacing:-0.5px; }
+  .greeting span { color:var(--red); }
+  .date-text { color:var(--muted); font-size:13px; margin-bottom:20px; }
+
+  .checkin-card {
+    background:var(--red);
+    border-radius:22px;
+    padding:28px 24px;
+    margin-bottom:16px;
+    text-align:center;
+    position:relative; overflow:hidden;
+    box-shadow:0 12px 30px rgba(232,0,28,0.25);
+  }
+  .checkin-card::before {
+    content:'';
+    position:absolute; top:-40px; right:-40px;
+    width:150px; height:150px; border-radius:50%;
+    background:rgba(255,255,255,0.08);
+  }
+  .checkin-card::after {
+    content:'';
+    position:absolute; bottom:-30px; left:-30px;
+    width:120px; height:120px; border-radius:50%;
+    background:rgba(255,255,255,0.06);
+  }
+  .checkin-time {
+    font-family:var(--font-head); font-size:52px; font-weight:900;
+    color:#fff; line-height:1; margin-bottom:6px; letter-spacing:-2px;
+  }
+  .checkin-status { color:rgba(255,255,255,0.75); font-size:13px; margin-bottom:20px; }
+  .checkin-btn {
+    padding:13px 44px; border-radius:50px; border:none;
+    font-family:var(--font-head); font-size:14px; font-weight:700;
+    cursor:pointer; transition:all 0.2s; letter-spacing:0.5px; text-transform:uppercase;
+  }
+  .checkin-btn.in { background:#fff; color:var(--red); }
+  .checkin-btn.out { background:rgba(0,0,0,0.2); color:#fff; border:2px solid rgba(255,255,255,0.4); }
+  .checkin-btn:hover { transform:scale(1.05); }
+
+  .stats-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  .stat-card {
+    background:#fff; border:2px solid var(--border);
+    border-radius:16px; padding:18px; text-align:center;
+    box-shadow:0 2px 8px rgba(0,0,0,0.04);
+  }
+  .stat-num { font-family:var(--font-head); font-size:36px; font-weight:900; color:var(--red); }
+  .stat-label { color:var(--muted); font-size:11px; margin-top:2px; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background:#fff; border:2px solid var(--border);
+    border-radius:18px; padding:20px; margin-bottom:16px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.04);
+  }
+  .card-title {
+    font-family:var(--font-head); font-size:12px; font-weight:700;
+    color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:14px;
+  }
+
+  /* ===== FORMS ===== */
+  .form-title { font-family:var(--font-head); font-size:24px; font-weight:900; margin-bottom:4px; letter-spacing:-0.5px; }
+  .form-title span { color:var(--red); }
+  .form-sub { color:var(--muted); font-size:13px; margin-bottom:22px; }
+  .form-group { margin-bottom:16px; }
+  .form-group label { display:block; font-size:11px; color:var(--muted); margin-bottom:7px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; }
+  .form-group input, .form-group textarea, .form-group select {
+    width:100%; padding:13px 16px;
+    background:#fff; border:2px solid var(--border);
+    border-radius:12px; color:var(--text);
+    font-family:var(--font-body); font-size:15px;
+    outline:none; transition:border-color 0.2s; resize:vertical;
+  }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color:var(--red); }
+  .form-group select option { background:#fff; }
+  .btn-submit {
+    width:100%; padding:16px;
+    background:var(--red); border:none; border-radius:12px;
+    color:#fff; font-family:var(--font-head); font-size:15px; font-weight:700;
+    cursor:pointer; transition:all 0.2s; text-transform:uppercase; letter-spacing:1px;
+  }
+  .btn-submit:hover { background:var(--red-dark); transform:translateY(-1px); box-shadow:0 8px 20px rgba(232,0,28,0.3); }
+
+  .gps-btn {
+    display:flex; align-items:center; gap:10px;
+    padding:13px 16px;
+    background:#fff; border:2px solid var(--border);
+    border-radius:12px; color:var(--text);
+    font-family:var(--font-body); font-size:14px;
+    cursor:pointer; transition:all 0.2s; width:100%; margin-bottom:8px;
+  }
+  .gps-btn:hover { border-color:var(--red); }
+  .gps-dot { width:10px; height:10px; border-radius:50%; background:#ddd; flex-shrink:0; }
+  .gps-dot.got { background:#22c55e; }
+
+  /* ===== REPORTS ===== */
+  .report-item {
+    background:#fff; border:2px solid var(--border);
+    border-radius:14px; padding:16px; margin-bottom:12px;
+    transition:border-color 0.2s;
+  }
+  .report-item:hover { border-color:var(--red); }
+  .report-date { font-size:11px; color:var(--muted); margin-bottom:5px; font-weight:600; }
+  .report-text { font-size:14px; line-height:1.5; color:var(--text); }
+  .report-badge {
+    display:inline-block; padding:3px 12px;
+    border-radius:50px; font-size:11px; font-weight:700;
+    margin-top:8px; text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .badge-red { background:var(--red-light); color:var(--red); }
+  .badge-green { background:#f0fdf4; color:#16a34a; }
+
+  /* ===== SEGMENTS ===== */
+  .seg-tabs { display:flex; background:var(--red-light); border-radius:12px; padding:4px; margin-bottom:18px; }
+  .seg-tab {
+    flex:1; padding:10px; border:none; background:transparent;
+    color:var(--muted); font-family:var(--font-head); font-size:12px;
+    border-radius:9px; cursor:pointer; transition:all 0.2s; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .seg-tab.active { background:var(--red); color:#fff; }
+
+  /* ===== QUICK TAGS ===== */
+  .tags-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .tag-btn {
+    padding:7px 14px; border-radius:50px;
+    background:#fff; border:2px solid var(--border);
+    color:var(--muted); font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s;
+  }
+  .tag-btn.active, .tag-btn:hover { background:var(--red-light); border-color:var(--red); color:var(--red); }
+
+  /* ===== ADMIN ===== */
+  .admin-header {
+    background:var(--red);
+    padding:24px 20px 20px; text-align:center;
+    box-shadow:0 4px 16px rgba(232,0,28,0.25);
+  }
+  .admin-badge {
+    display:inline-block; padding:4px 14px;
+    background:rgba(255,255,255,0.2); color:#fff;
+    border-radius:50px; font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px;
+  }
+  .admin-tabs { display:flex; border-bottom:2px solid var(--red-soft); background:#fff; }
+  .admin-tab {
+    flex:1; padding:14px 4px; border:none; background:transparent;
+    color:#bbb; font-family:var(--font-head); font-size:11px;
+    cursor:pointer; transition:all 0.2s; font-weight:700;
+    border-bottom:3px solid transparent; text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .admin-tab.active { color:var(--red); border-bottom-color:var(--red); }
+  .admin-section { display:none; }
+  .admin-section.active { display:block; }
+
+  .staff-item {
+    background:#fff; border:2px solid var(--border);
+    border-radius:14px; padding:16px; margin-bottom:10px;
+    display:flex; align-items:center; gap:14px;
+  }
+  .staff-avatar {
+    width:46px; height:46px; border-radius:50%;
+    background:var(--red); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-head); font-size:18px; font-weight:900; flex-shrink:0;
+  }
+  .staff-name { font-weight:700; font-size:15px; margin-bottom:2px; font-family:var(--font-head); }
+  .staff-status { font-size:12px; color:var(--muted); }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position:fixed; top:20px; left:50%; transform:translateX(-50%);
+    background:var(--red); color:#fff;
+    padding:12px 24px; border-radius:50px;
+    font-size:14px; font-weight:600; z-index:9999; opacity:0;
+    transition:opacity 0.3s; pointer-events:none; white-space:nowrap;
+    box-shadow:0 8px 24px rgba(232,0,28,0.4); font-family:var(--font-head);
+  }
+  .toast.show { opacity:1; }
+
+  /* ===== LOADING ===== */
+  .loading { display:flex; align-items:center; justify-content:center; padding:40px; flex-direction:column; gap:12px; }
+  .spinner {
+    width:36px; height:36px; border:3px solid var(--red-soft);
+    border-top-color:var(--red); border-radius:50%; animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .empty-state { text-align:center; padding:40px 20px; color:var(--muted); font-size:14px; }
+  .empty-icon { font-size:40px; margin-bottom:12px; }
+
+  .btn-outline {
+    padding:9px 18px; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.4);
+    border-radius:10px; color:#fff; font-family:var(--font-head); font-size:12px; font-weight:700;
+    cursor:pointer; transition:all 0.2s; text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .btn-outline:hover { background:rgba(255,255,255,0.25); }
+
+  .quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .quick-btn {
+    padding:16px 12px; border-radius:14px; border:2px solid;
+    font-family:var(--font-head); font-size:12px; font-weight:700;
+    cursor:pointer; transition:all 0.2s; text-align:center; text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .quick-btn:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,0.1); }
+  .qb-red { background:var(--red-light); border-color:var(--red); color:var(--red); }
+  .qb-dark { background:#f5f5f5; border-color:#ddd; color:#333; }
+
+  @media (max-width:400px) {
+    .checkin-time { font-size:42px; }
+    .greeting { font-size:22px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ===== AUTH ===== -->
+<div class="screen active" id="authScreen">
+  <div class="auth-box">
+    <div class="auth-logo">CS <span>Activity</span></div>
+    <div class="auth-sub">Cognitive Solutions Pvt Ltd</div>
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="switchAuth('login')">Sign In</button>
+      <button class="tab-btn" onclick="switchAuth('register')">Register</button>
+    </div>
+    <div id="loginForm">
+      <div class="input-group"><label>Email</label><input type="email" id="loginEmail" placeholder="you@company.com"></div>
+      <div class="input-group"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+      <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+    </div>
+    <div id="registerForm" style="display:none">
+      <div class="input-group"><label>Full Name</label><input type="text" id="regName" placeholder="Muhammad Ali"></div>
+      <div class="input-group"><label>Email</label><input type="email" id="regEmail" placeholder="you@company.com"></div>
+      <div class="input-group"><label>Password</label><input type="password" id="regPass" placeholder="Min 6 characters"></div>
+      <div class="input-group"><label>WhatsApp</label><input type="tel" id="regPhone" placeholder="+92 300 1234567"></div>
+      <button class="btn-primary" onclick="doRegister()">Create Account →</button>
+    </div>
+    <div class="error-msg" id="authError"></div>
+  </div>
+</div>
+
+<!-- ===== EMPLOYEE ===== -->
+<div class="screen" id="employeeScreen">
+  <div class="topbar">
+    <div class="topbar-title">CS <span>Activity</span></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="btn-outline" onclick="doLogout()">Logout</button>
+      <div class="avatar" id="userAvatar">?</div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="content" id="tab-home">
+    <div class="greeting">Hello, <span id="userName">User</span>! 👋</div>
+    <div class="date-text" id="todayDate"></div>
+    <div class="checkin-card">
+      <div class="checkin-time" id="liveClock">--:--</div>
+      <div class="checkin-status" id="checkStatus">Not checked in today</div>
+      <button class="checkin-btn in" id="checkBtn" onclick="toggleCheckIn()">⏳ Check In</button>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="statReports">0</div><div class="stat-label">Reports This Month</div></div>
+      <div class="stat-card"><div class="stat-num" id="statVisits">0</div><div class="stat-label">Visits This Month</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Quick Actions</div>
+      <div class="quick-actions">
+        <button class="quick-btn qb-red" onclick="showTab('activity')">📝 Daily Report</button>
+        <button class="quick-btn qb-red" onclick="showTab('visit')">📍 Visit Report</button>
+        <button class="quick-btn qb-dark" onclick="showTab('reports')">📊 My Reports</button>
+        <button class="quick-btn qb-dark" onclick="showTab('profile')">👤 Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVITY -->
+  <div class="content" id="tab-activity" style="display:none">
+    <div class="form-title">📝 Daily <span>Activity</span></div>
+    <div class="form-sub">Submit your daily work report</div>
+    <div class="form-group"><label>Report Date</label><input type="date" id="actDate"></div>
+    <div class="form-group"><label>Activity Summary</label><textarea id="actSummary" rows="5" placeholder="Describe your activities today..."></textarea></div>
+    <div class="form-group">
+      <label>Quick Tags</label>
+      <div class="tags-row">
+        <span class="tag-btn" onclick="addTag(this,'Meeting')">🤝 Meeting</span>
+        <span class="tag-btn" onclick="addTag(this,'Field Visit')">🚗 Field Visit</span>
+        <span class="tag-btn" onclick="addTag(this,'Office Work')">🏢 Office</span>
+        <span class="tag-btn" onclick="addTag(this,'Training')">📚 Training</span>
+        <span class="tag-btn" onclick="addTag(this,'Client Call')">📞 Client Call</span>
+        <span class="tag-btn" onclick="addTag(this,'Report')">📄 Report</span>
+      </div>
+    </div>
+    <button class="btn-submit" onclick="submitActivity()">✓ Submit Report</button>
+  </div>
+
+  <!-- VISIT -->
+  <div class="content" id="tab-visit" style="display:none">
+    <div class="form-title">📍 Visit <span>Report</span></div>
+    <div class="form-sub">Log your client visit</div>
+    <div class="form-group">
+      <label>GPS Location</label>
+      <button class="gps-btn" onclick="getGPS()">
+        <div class="gps-dot" id="gpsDot"></div>
+        <span id="gpsText">Tap to get GPS location</span>
+      </button>
+    </div>
+    <div class="form-group"><label>Client Name *</label><input type="text" id="visitClient" placeholder="Company or person name"></div>
+    <div class="form-group"><label>City</label><input type="text" id="visitCity" placeholder="Lahore, Karachi..."></div>
+    <div class="form-group">
+      <label>Visit Outcome *</label>
+      <select id="visitOutcome">
+        <option value="">— Select Outcome —</option>
+        <option>🤝 First Meeting</option>
+        <option>📋 Demo / Presentation</option>
+        <option>📄 Quote / Proposal</option>
+        <option>📅 Follow-up Visit</option>
+        <option>💰 Payment / Recovery</option>
+        <option>🎉 Order Closed</option>
+        <option>🔄 Complaint</option>
+        <option>❌ Not Available</option>
+        <option>🚪 Cold Visit</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Description</label><textarea id="visitDesc" rows="4" placeholder="What happened during the visit..."></textarea></div>
+    <button class="btn-submit" onclick="submitVisit()">✓ Submit Visit</button>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="content" id="tab-reports" style="display:none">
+    <div class="form-title">📊 My <span>Reports</span></div>
+    <div class="seg-tabs" style="margin-top:12px;">
+      <button class="seg-tab active" onclick="switchReportTab('activity')">📝 Activity</button>
+      <button class="seg-tab" onclick="switchReportTab('visits')">📍 Visits</button>
+    </div>
+    <div id="activityReportsList"><div class="loading"><div class="spinner"></div></div></div>
+    <div id="visitsReportsList" style="display:none"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="content" id="tab-profile" style="display:none">
+    <div class="form-title">👤 My <span>Profile</span></div>
+    <div class="card" style="text-align:center;padding:32px 20px;">
+      <div style="width:84px;height:84px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:32px;font-weight:900;color:#fff;margin:0 auto 16px;">
+        <span id="profileInitial">?</span>
+      </div>
+      <div style="font-family:var(--font-head);font-size:20px;font-weight:900;margin-bottom:4px;" id="profileName">-</div>
+      <div style="color:var(--muted);font-size:13px;" id="profileEmail">-</div>
+    </div>
+    <div class="card">
+      <div class="card-title">This Month Stats</div>
+      <div class="stats-row" style="margin-bottom:0;">
+        <div class="stat-card"><div class="stat-num" id="profileReports">0</div><div class="stat-label">Reports</div></div>
+        <div class="stat-card"><div class="stat-num" id="profileVisits">0</div><div class="stat-label">Visits</div></div>
+      </div>
+    </div>
+    <button onclick="doLogout()" style="width:100%;padding:14px;background:var(--red-light);border:2px solid var(--red);border-radius:12px;color:var(--red);font-family:var(--font-head);font-size:14px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;margin-top:8px;">🚪 Sign Out</button>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-item active" onclick="showTab('home')" id="nav-home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </button>
+    <button class="nav-item" onclick="showTab('activity')" id="nav-activity">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Activity
+    </button>
+    <button class="nav-item" onclick="showTab('visit')" id="nav-visit">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Visit
+    </button>
+    <button class="nav-item" onclick="showTab('reports')" id="nav-reports">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Reports
+    </button>
+    <button class="nav-item" onclick="showTab('profile')" id="nav-profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profile
+    </button>
+  </div>
+</div>
+
+<!-- ===== ADMIN ===== -->
+<div class="screen" id="adminScreen">
+  <div class="admin-header">
+    <div class="admin-badge">ADMIN PANEL</div>
+    <div style="font-family:var(--font-head);font-size:24px;font-weight:900;color:#fff;letter-spacing:-0.5px;">CS Activity</div>
+    <div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:4px;text-transform:uppercase;letter-spacing:1px;">Management Dashboard</div>
+    <button class="btn-outline" onclick="doLogout()" style="margin-top:14px;">Logout</button>
+  </div>
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="switchAdminTab('dashboard')">📊 Dash</button>
+    <button class="admin-tab" onclick="switchAdminTab('staff')">👥 Staff</button>
+    <button class="admin-tab" onclick="switchAdminTab('reports')">📋 Reports</button>
+    <button class="admin-tab" onclick="switchAdminTab('addstaff')">➕ Add</button>
+  </div>
+  <div class="content" style="padding-top:16px;">
+
+    <div class="admin-section active" id="admin-dashboard">
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num" id="adminTotalStaff">0</div><div class="stat-label">Total Staff</div></div>
+        <div class="stat-card"><div class="stat-num" id="adminTotalReports">0</div><div class="stat-label">Reports Today</div></div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num" id="adminTotalVisits">0</div><div class="stat-label">Visits Today</div></div>
+        <div class="stat-card"><div class="stat-num" id="adminMonthReports">0</div><div class="stat-label">Monthly</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Live Activity Feed</div>
+        <div id="liveFeed"><div class="empty-state"><div class="empty-icon">📭</div>No activity yet</div></div>
+      </div>
+    </div>
+
+    <div class="admin-section" id="admin-staff">
+      <div id="staffList"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <div class="admin-section" id="admin-reports">
+      <div class="seg-tabs">
+        <button class="seg-tab active" onclick="switchAdminReportTab('activity')">📝 Activity</button>
+        <button class="seg-tab" onclick="switchAdminReportTab('visits')">📍 Visits</button>
+      </div>
+      <div id="adminActivityList"><div class="loading"><div class="spinner"></div></div></div>
+      <div id="adminVisitsList" style="display:none"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <div class="admin-section" id="admin-addstaff">
+      <div class="form-title">➕ Add <span>Employee</span></div>
+      <div class="form-sub">Create new employee account</div>
+      <div class="form-group"><label>Full Name</label><input type="text" id="newStaffName" placeholder="Employee full name"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="newStaffEmail" placeholder="employee@company.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="newStaffPass" placeholder="Temporary password"></div>
+      <div class="form-group"><label>WhatsApp</label><input type="tel" id="newStaffPhone" placeholder="+92 300 0000000"></div>
+      <button class="btn-submit" onclick="addEmployee()">✓ Add Employee</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCBHm2zDgLdZIPxzLlDfB1HVHc4sXv1btw",
+  authDomain: "cs-activity-aa702.firebaseapp.com",
+  projectId: "cs-activity-aa702",
+  storageBucket: "cs-activity-aa702.firebasestorage.app",
+  messagingSenderId: "922570150922",
+  appId: "1:922570150922:web:a15bfb742f7ad74fa3bbf3"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let currentUser = null, currentUserData = null, checkedIn = false, gpsCoords = null;
+
+window.showToast = (msg, dur=3000) => {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), dur);
+};
+
+function updateClock() {
+  const now = new Date();
+  const cl = document.getElementById('liveClock');
+  if (cl) cl.textContent = now.toLocaleTimeString('en-PK',{hour:'2-digit',minute:'2-digit',hour12:true});
+  const dt = document.getElementById('todayDate');
+  if (dt) dt.textContent = now.toLocaleDateString('en-PK',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const ad = document.getElementById('actDate');
+  if (ad && !ad.value) ad.value = now.toISOString().split('T')[0];
+}
+setInterval(updateClock, 1000); updateClock();
+
+window.switchAuth = (tab) => {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('loginForm').style.display = tab==='login'?'block':'none';
+  document.getElementById('registerForm').style.display = tab==='register'?'block':'none';
+  document.getElementById('authError').textContent = '';
+};
+
+window.doLogin = async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  if (!email||!pass) { document.getElementById('authError').textContent='Please fill all fields'; return; }
+  try { await signInWithEmailAndPassword(auth, email, pass); }
+  catch(e) { document.getElementById('authError').textContent='Invalid email or password'; }
+};
+
+window.doRegister = async () => {
+  const name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const pass=document.getElementById('regPass').value;
+  const phone=document.getElementById('regPhone').value.trim();
+  if (!name||!email||!pass) { document.getElementById('authError').textContent='Please fill all fields'; return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await setDoc(doc(db,'users',cred.user.uid),{name,email,phone,role:'employee',createdAt:serverTimestamp()});
+    showToast('✅ Account created!');
+  } catch(e) { document.getElementById('authError').textContent=e.message; }
+};
+
+window.doLogout = async () => { await signOut(auth); };
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    const snap = await getDoc(doc(db,'users',user.uid));
+    currentUserData = snap.exists() ? snap.data() : {name:user.email.split('@')[0],role:'employee',email:user.email};
+    if (!snap.exists()) await setDoc(doc(db,'users',user.uid), currentUserData);
+    setupUserUI();
+    if (currentUserData.role==='admin') { showScreen('adminScreen'); loadAdminData(); }
+    else { showScreen('employeeScreen'); loadEmployeeData(); }
+  } else { currentUser=null; currentUserData=null; showScreen('authScreen'); }
+});
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setupUserUI() {
+  const name = currentUserData?.name||'User';
+  const init = name.charAt(0).toUpperCase();
+  ['userName','userAvatar','profileInitial'].forEach(id=>{
+    const el=document.getElementById(id);
+    if (el) el.textContent = id==='userName'?name.split(' ')[0]:init;
+  });
+  const pe=document.getElementById('profileName'); if(pe) pe.textContent=name;
+  const pm=document.getElementById('profileEmail'); if(pm) pm.textContent=currentUser.email;
+}
+
+window.showTab = (tab) => {
+  ['home','activity','visit','reports','profile'].forEach(t=>{
+    const c=document.getElementById('tab-'+t); if(c) c.style.display=t===tab?'block':'none';
+    const n=document.getElementById('nav-'+t); if(n) n.classList.toggle('active',t===tab);
+  });
+  if(tab==='reports') loadMyReports();
+  if(tab==='profile') loadProfileStats();
+};
+
+window.toggleCheckIn = async () => {
+  if (!checkedIn) {
+    checkedIn=true;
+    const now=new Date();
+    const isLate=now.getHours()>9||(now.getHours()===9&&now.getMinutes()>30);
+    await setDoc(doc(db,'attendance',`${currentUser.uid}_${today()}`),{userId:currentUser.uid,userName:currentUserData.name,checkIn:serverTimestamp(),status:isLate?'Late':'OnTime',date:today()});
+    document.getElementById('checkBtn').textContent='🚪 Check Out';
+    document.getElementById('checkBtn').className='checkin-btn out';
+    document.getElementById('checkStatus').textContent=`✅ Checked in at ${now.toLocaleTimeString('en-PK',{hour:'2-digit',minute:'2-digit',hour12:true})}`;
+    showToast('✅ Checked In!');
+  } else {
+    checkedIn=false;
+    await setDoc(doc(db,'attendance',`${currentUser.uid}_${today()}`),{checkOut:serverTimestamp()},{merge:true});
+    document.getElementById('checkBtn').textContent='⏳ Check In';
+    document.getElementById('checkBtn').className='checkin-btn in';
+    document.getElementById('checkStatus').textContent='Checked out';
+    showToast('👋 Checked Out!');
+  }
+};
+
+function today() { return new Date().toISOString().split('T')[0]; }
+
+window.getGPS = () => {
+  document.getElementById('gpsText').textContent='Getting location...';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      gpsCoords={lat:pos.coords.latitude,lng:pos.coords.longitude};
+      document.getElementById('gpsText').textContent=`📍 ${gpsCoords.lat.toFixed(4)}, ${gpsCoords.lng.toFixed(4)}`;
+      document.getElementById('gpsDot').className='gps-dot got';
+      showToast('📍 GPS Captured!');
+    },
+    err=>{ document.getElementById('gpsText').textContent='GPS failed - try again'; showToast('❌ GPS Error'); }
+  );
+};
+
+window.addTag = (el, tag) => {
+  el.classList.toggle('active');
+  const ta=document.getElementById('actSummary');
+  if(el.classList.contains('active')) ta.value+=(ta.value?', ':'')+tag;
+};
+
+window.submitActivity = async () => {
+  const date=document.getElementById('actDate').value;
+  const summary=document.getElementById('actSummary').value.trim();
+  if(!date||!summary){showToast('⚠️ Please fill all fields');return;}
+  try {
+    await addDoc(collection(db,'reports'),{userId:currentUser.uid,userName:currentUserData.name,date,summary,type:'activity',createdAt:serverTimestamp()});
+    document.getElementById('actSummary').value='';
+    document.querySelectorAll('.tag-btn').forEach(t=>t.classList.remove('active'));
+    showToast('✅ Report Submitted!'); showTab('home'); loadEmployeeData();
+  } catch(e){showToast('❌ Error: '+e.message);}
+};
+
+window.submitVisit = async () => {
+  const client=document.getElementById('visitClient').value.trim();
+  const outcome=document.getElementById('visitOutcome').value;
+  const city=document.getElementById('visitCity').value.trim();
+  const desc=document.getElementById('visitDesc').value.trim();
+  if(!client||!outcome){showToast('⚠️ Client name and outcome required');return;}
+  try {
+    await addDoc(collection(db,'visits'),{userId:currentUser.uid,userName:currentUserData.name,client,outcome,city,desc,gps:gpsCoords||null,date:today(),createdAt:serverTimestamp()});
+    ['visitClient','visitCity','visitDesc'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('visitOutcome').value='';
+    document.getElementById('gpsText').textContent='Tap to get GPS location';
+    document.getElementById('gpsDot').className='gps-dot'; gpsCoords=null;
+    showToast('✅ Visit Submitted!'); showTab('home'); loadEmployeeData();
+  } catch(e){showToast('❌ Error: '+e.message);}
+};
+
+async function loadEmployeeData() {
+  const monthStart=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().split('T')[0];
+  const rSnap=await getDocs(query(collection(db,'reports'),where('userId','==',currentUser.uid),where('date','>=',monthStart)));
+  const vSnap=await getDocs(query(collection(db,'visits'),where('userId','==',currentUser.uid),where('date','>=',monthStart)));
+  document.getElementById('statReports').textContent=rSnap.size;
+  document.getElementById('statVisits').textContent=vSnap.size;
+  const att=await getDoc(doc(db,'attendance',`${currentUser.uid}_${today()}`));
+  if(att.exists()&&att.data().checkIn){
+    checkedIn=true;
+    document.getElementById('checkBtn').textContent='🚪 Check Out';
+    document.getElementById('checkBtn').className='checkin-btn out';
+    document.getElementById('checkStatus').textContent='✅ Checked in today';
+  }
+}
+
+async function loadMyReports() {
+  const actEl=document.getElementById('activityReportsList');
+  const visEl=document.getElementById('visitsReportsList');
+  actEl.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  const rSnap=await getDocs(query(collection(db,'reports'),where('userId','==',currentUser.uid),orderBy('createdAt','desc'),limit(20)));
+  actEl.innerHTML=rSnap.empty?'<div class="empty-state"><div class="empty-icon">📭</div>No reports yet</div>':'';
+  rSnap.forEach(d=>{const data=d.data();actEl.innerHTML+=`<div class="report-item"><div class="report-date">📅 ${data.date}</div><div class="report-text">${data.summary}</div><span class="report-badge badge-red">Activity Report</span></div>`;});
+  const vSnap=await getDocs(query(collection(db,'visits'),where('userId','==',currentUser.uid),orderBy('createdAt','desc'),limit(20)));
+  visEl.innerHTML=vSnap.empty?'<div class="empty-state"><div class="empty-icon">📍</div>No visits yet</div>':'';
+  vSnap.forEach(d=>{const data=d.data();visEl.innerHTML+=`<div class="report-item"><div class="report-date">📅 ${data.date} • ${data.city||''}</div><div class="report-text"><strong>${data.client}</strong></div><span class="report-badge badge-green">${data.outcome}</span></div>`;});
+}
+
+window.switchReportTab = (tab) => {
+  document.querySelectorAll('.seg-tabs .seg-tab').forEach((b,i)=>b.classList.toggle('active',(i===0&&tab==='activity')||(i===1&&tab==='visits')));
+  document.getElementById('activityReportsList').style.display=tab==='activity'?'block':'none';
+  document.getElementById('visitsReportsList').style.display=tab==='visits'?'block':'none';
+};
+
+async function loadProfileStats() {
+  const monthStart=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().split('T')[0];
+  const r=await getDocs(query(collection(db,'reports'),where('userId','==',currentUser.uid),where('date','>=',monthStart)));
+  const v=await getDocs(query(collection(db,'visits'),where('userId','==',currentUser.uid),where('date','>=',monthStart)));
+  document.getElementById('profileReports').textContent=r.size;
+  document.getElementById('profileVisits').textContent=v.size;
+}
+
+async function loadAdminData() {
+  const usersSnap=await getDocs(query(collection(db,'users'),where('role','==','employee')));
+  document.getElementById('adminTotalStaff').textContent=usersSnap.size;
+  const rSnap=await getDocs(query(collection(db,'reports'),where('date','==',today())));
+  document.getElementById('adminTotalReports').textContent=rSnap.size;
+  const vSnap=await getDocs(query(collection(db,'visits'),where('date','==',today())));
+  document.getElementById('adminTotalVisits').textContent=vSnap.size;
+  const monthStart=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().split('T')[0];
+  const mr=await getDocs(query(collection(db,'reports'),where('date','>=',monthStart)));
+  document.getElementById('adminMonthReports').textContent=mr.size;
+  loadLiveFeed(); loadStaff(usersSnap);
+}
+
+async function loadLiveFeed() {
+  const feedEl=document.getElementById('liveFeed');
+  const rSnap=await getDocs(query(collection(db,'reports'),orderBy('createdAt','desc'),limit(5)));
+  const vSnap=await getDocs(query(collection(db,'visits'),orderBy('createdAt','desc'),limit(5)));
+  let items=[];
+  rSnap.forEach(d=>items.push({...d.data(),kind:'report'}));
+  vSnap.forEach(d=>items.push({...d.data(),kind:'visit'}));
+  items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+  if(!items.length){feedEl.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div>No activity yet</div>';return;}
+  feedEl.innerHTML=items.slice(0,8).map(item=>`<div class="report-item"><div class="report-date">👤 ${item.userName||'Unknown'} • ${item.date||''}</div><div class="report-text">${item.kind==='visit'?`📍 <strong>${item.client}</strong>`:`📝 ${(item.summary||'').substring(0,80)}...`}</div><span class="report-badge ${item.kind==='visit'?'badge-green':'badge-red'}">${item.kind==='visit'?item.outcome:'Activity'}</span></div>`).join('');
+}
+
+function loadStaff(snap) {
+  const staffEl=document.getElementById('staffList');
+  if(snap.empty){staffEl.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div>No staff added yet</div>';return;}
+  staffEl.innerHTML='';
+  snap.forEach(d=>{const u=d.data();staffEl.innerHTML+=`<div class="staff-item"><div class="staff-avatar">${u.name?.charAt(0)||'?'}</div><div class="staff-info"><div class="staff-name">${u.name}</div><div class="staff-status">${u.email}</div></div></div>`;});
+}
+
+window.switchAdminTab = (tab) => {
+  const tabs=['dashboard','staff','reports','addstaff'];
+  document.querySelectorAll('.admin-tab').forEach((b,i)=>b.classList.toggle('active',tabs[i]===tab));
+  document.querySelectorAll('.admin-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('admin-'+tab).classList.add('active');
+  if(tab==='reports') loadAdminReports();
+};
+
+async function loadAdminReports() {
+  const actEl=document.getElementById('adminActivityList');
+  const visEl=document.getElementById('adminVisitsList');
+  actEl.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  const rSnap=await getDocs(query(collection(db,'reports'),orderBy('createdAt','desc'),limit(30)));
+  actEl.innerHTML=rSnap.empty?'<div class="empty-state"><div class="empty-icon">📭</div>No reports</div>':'';
+  rSnap.forEach(d=>{const data=d.data();actEl.innerHTML+=`<div class="report-item"><div class="report-date">👤 ${data.userName} • 📅 ${data.date}</div><div class="report-text">${data.summary}</div><span class="report-badge badge-red">Activity</span></div>`;});
+  const vSnap=await getDocs(query(collection(db,'visits'),orderBy('createdAt','desc'),limit(30)));
+  visEl.innerHTML=vSnap.empty?'<div class="empty-state"><div class="empty-icon">📍</div>No visits</div>':'';
+  vSnap.forEach(d=>{const data=d.data();visEl.innerHTML+=`<div class="report-item"><div class="report-date">👤 ${data.userName} • 📅 ${data.date}</div><div class="report-text"><strong>${data.client}</strong></div><span class="report-badge badge-green">${data.outcome}</span></div>`;});
+}
+
+window.switchAdminReportTab = (tab) => {
+  document.querySelectorAll('#admin-reports .seg-tab').forEach((b,i)=>b.classList.toggle('active',(i===0&&tab==='activity')||(i===1&&tab==='visits')));
+  document.getElementById('adminActivityList').style.display=tab==='activity'?'block':'none';
+  document.getElementById('adminVisitsList').style.display=tab==='visits'?'block':'none';
+};
+
+window.addEmployee = async () => {
+  const name=document.getElementById('newStaffName').value.trim();
+  const email=document.getElementById('newStaffEmail').value.trim();
+  const pass=document.getElementById('newStaffPass').value;
+  const phone=document.getElementById('newStaffPhone').value.trim();
+  if(!name||!email||!pass){showToast('⚠️ Fill all required fields');return;}
+  try {
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    await setDoc(doc(db,'users',cred.user.uid),{name,email,phone,role:'employee',createdAt:serverTimestamp()});
+    ['newStaffName','newStaffEmail','newStaffPass','newStaffPhone'].forEach(id=>document.getElementById(id).value='');
+    showToast('✅ Employee Added!'); loadAdminData();
+  } catch(e){showToast('❌ Error: '+e.message);}
+};
+</script>
+</body>
+</html>
